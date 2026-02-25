@@ -1,0 +1,56 @@
+import torch
+import torch.nn.functional as F
+import pdb
+
+def log_nb_likelihood(x, mu, theta,  eps=1e-8):
+    """
+    Note: All inputs are torch Tensors
+    log likelihood (scalar) of a minibatch according to a zinb model.
+    Notes:
+    We parametrize the bernoulli using the logits, hence the softplus functions appearing
+
+    Variables:
+    mu: mean of the negative binomial (has to be positive support) (shape: minibatch x genes)
+    theta: inverse dispersion parameter (has to be positive support) (shape: minibatch x genes)
+    eps: numerical stability constant
+    """
+    # theta is the dispersion rate. If .ndimension() == 1, it is shared for all cells (regardless of batch or labels)
+    #pdb.set_trace()
+    if theta.ndimension() == 1:
+        theta = theta.view(1, theta.size(0))  # In this case, we reshape theta for broadcasting
+        
+    res = theta * torch.log(theta + eps) - theta * torch.log(
+        theta + mu + eps) + x * torch.log(mu + eps) - x * torch.log(theta + mu + eps) + torch.lgamma(
+        x + theta + eps) - torch.lgamma(theta + eps) - torch.lgamma(x + 1)
+
+    return torch.sum(res, dim=-1)
+
+def log_zinb_likelihood(x, mu, theta, pi, scaler, eps=1e-8):
+    """
+    Note: All inputs are torch Tensors
+    log likelihood (scalar) of a minibatch according to a zinb model.
+    Notes:
+    We parametrize the bernoulli using the logits, hence the softplus functions appearing
+
+    Variables:
+    mu: mean of the negative binomial (has to be positive support) (shape: minibatch x genes)
+    theta: inverse dispersion parameter (has to be positive support) (shape: minibatch x genes)
+    pi: logit of the dropout parameter (real support) (shape: minibatch x genes)
+    eps: numerical stability constant
+    """
+    # theta is the dispersion rate. If .ndimension() == 1, it is shared for all cells (regardless of batch or labels)
+    #pdb.set_trace()
+    if theta.ndimension() == 1:
+        theta = theta.view(1, theta.size(0))  # In this case, we reshape theta for broadcasting
+        
+    mu = mu.mul(scaler)
+
+    case_zero = (F.softplus((- pi + theta * torch.log(theta + eps) - theta * torch.log(theta + mu + eps)))
+                 - F.softplus(-pi))
+
+    case_non_zero = - pi - F.softplus(-pi) + theta * torch.log(theta + eps) - theta * torch.log(
+        theta + mu + eps) + x * torch.log(mu + eps) - x * torch.log(theta + mu + eps) + torch.lgamma(
+        x + theta + eps) - torch.lgamma(theta + eps) - torch.lgamma(x + 1)
+
+    res = torch.mul((x < eps).type(torch.float32), case_zero) + torch.mul((x > eps).type(torch.float32), case_non_zero)
+    return torch.sum(res, dim=-1)
