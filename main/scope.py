@@ -46,6 +46,8 @@ class SCOPE:
         Trees to add per iteration (default: 50)
     n_neighbors : int
         Number of neighbors for graph construction (default: 10)
+    recruitment_size : int, optional
+        Number of cells to recruit per iteration (default: None, auto-computed as sqrt(n_obs))
     use_X : bool
         If True, use data.X as feature matrix instead of data.obsm[feature_key] (default: False)
         Useful when no imputation is available
@@ -82,7 +84,7 @@ class SCOPE:
 
     def __init__(self, data, feature_key='imputed_hvg', latent_key='vae_latent_space',
                  alpha=0.1, omit_tail=0, iter_graph=100, initial_trees=100,
-                 trees_per_iteration=50, n_neighbors=10, use_X=False):
+                 trees_per_iteration=50, n_neighbors=10, recruitment_size=None, use_X=False):
         """Initialize SCOPE with data and parameters."""
         # Import dependencies first
 
@@ -95,6 +97,7 @@ class SCOPE:
         self.initial_trees = initial_trees
         self.trees_per_iteration = trees_per_iteration
         self.n_neighbors = n_neighbors
+        self._recruitment_size_param = recruitment_size
         self.use_X = use_X
 
         # Validate input data
@@ -194,7 +197,14 @@ class SCOPE:
         self : SCOPE
             Returns self for method chaining
         """
-        self.recruitment_size = round(np.sqrt(self.data.n_obs))
+        # Use custom recruitment_size if provided, otherwise auto-compute
+        if self._recruitment_size_param is not None:
+            self.recruitment_size = self._recruitment_size_param
+            print(f"Using custom recruitment size: {self.recruitment_size}")
+        else:
+            self.recruitment_size = round(np.sqrt(self.data.n_obs))
+            print(f"Auto-computed recruitment size: {self.recruitment_size} (sqrt of {self.data.n_obs} cells)")
+
         self.conformal_result = {
             'recruitment_size': self.recruitment_size,
             'qhat': [],
