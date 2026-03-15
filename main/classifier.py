@@ -2,6 +2,7 @@ from sklearn.ensemble import RandomForestClassifier
 from joblib import Parallel, delayed
 import numpy as np
 import pandas as pd
+import warnings
 
 def set_binary_label_rf(y):
     """Convert multi-class labels to binary labels for each classifier."""
@@ -55,7 +56,11 @@ def update_classifiers_trees(classifiers, trees_to_add):
 def train_rf_classifier(clf, X_train, y_train_binary):
     """Train the Random Forest classifier."""
     y_train_binary = np.array(y_train_binary).flatten()  # Ensure 1D format
-    clf.fit(X_train, y_train_binary)
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore',
+                              message='.*class_weight presets.*warm_start.*',
+                              category=UserWarning)
+        clf.fit(X_train, y_train_binary)
     return clf
 
 def predict_rf_classifier(clf, X):
