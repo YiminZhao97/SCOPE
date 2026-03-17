@@ -141,34 +141,37 @@ def find_qhat(score, weights, alpha=0.1):
 
 ###########################################################################
 import cvxpy as cp
-def solve_covariate_shift(calibration_features, test_features):
+import pandas as pd
+def solve_covariate_shift(calibration_features, test_features, prob_cal_prop=None):
     """
     Solve the maximum entropy reweighting problem for covariate shift correction.
-    
+
     Parameters:
     -----------
     calibration_features : numpy.ndarray
         Array of shape (n1, d) containing f(x_C_i) for each calibration point
     test_features : numpy.ndarray
         Array of shape (n2, d) containing f(x_T_i) for each test point
-    
+    prob_cal_prop : pandas.DataFrame, optional
+        Calibration probabilities for fallback weighting scheme when optimization fails
+
     Returns:
     --------
     weights : numpy.ndarray
         Optimal weights for calibration points
     """
     n1 = calibration_features.shape[0]  # Number of calibration samples
-    
+
     # Define the optimization variable (weights)
     w = cp.Variable(n1)
-    
+
     # Objective: maximize entropy (-sum(w_i * log(w_i)))
     # Note: cp.entr(w) gives w_i * log(w_i), so we maximize the sum of entropy terms
     objective = cp.Maximize(cp.sum(cp.entr(w)))
-    
+
     # Calculate mean features of test set
     test_mean = np.mean(test_features, axis=0)
-    
+
     # Constraints
 
     epsilon = 1e-1  # Small tolerance
@@ -183,9 +186,25 @@ def solve_covariate_shift(calibration_features, test_features):
     # Formulate and solve the problem
     problem = cp.Problem(objective, constraints)
     problem.solve(solver = 'SCS')
-    
+
     # Check if the problem was successfully solved
     if problem.status != 'optimal':
-        print(f"Warning: Problem status is {problem.status}, not 'optimal'")
-    
+        print(f"Warning: Problem status is {problem.status}, not 'optimal'. Using fallback weighting scheme.")
+
+        # Fallback: use max commitment-based weighting
+        if prob_cal_prop is not None:
+            max_commit = np.max(prob_cal_prop, axis=1)
+            order_index = np.argsort(max_commit)
+            ordered_max_commit = max_commit[order_index]
+            weight = generate_descending_weights(n1, 0.9)
+            ordered_max_commit_df = pd.DataFrame({'max_commit': ordered_max_commit})
+            ordered_max_commit_df['weight'] = weight
+            original_order_index = np.argsort(order_index)
+            reordered_max_commit_df = ordered_max_commit_df.iloc[original_order_index].reset_index(drop=True)
+            return reordered_max_commit_df['weight'].values
+        else:
+            # If prob_cal_prop not provided, use uniform weights as last resort
+            print("Warning: prob_cal_prop not provided for fallback. Using uniform weights.")
+            return np.ones(n1) / n1
+
     return w.value

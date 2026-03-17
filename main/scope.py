@@ -308,7 +308,7 @@ class SCOPE:
         """Apply covariate shift adjustment and compute qhat."""
         calibration_features = prob_cal_prop.apply(lambda x: entropy(x), axis=1)
         test_features = prob_test_prop.apply(lambda x: entropy(x), axis=1)
-        weights = solve_covariate_shift(calibration_features.values, test_features.values)
+        weights = solve_covariate_shift(calibration_features.values, test_features.values, prob_cal_prop=prob_cal_prop)
 
         df_score_weight = pd.DataFrame({'score': score, 'weight': weights})
         df_score_weight = df_score_weight.sort_values(by='score', ascending=True)
