@@ -1,6 +1,4 @@
-# SCOPE: Single-Cell Ontogeny Prediction Engine
-
-SCOPE is a Python framework for predicting cell fate trajectories using conformal prediction and iterative semi-supervised learning.
+# SCOPE: Localizing fate-decision states and their regulatory drivers in single-cell differentiation
 
 ## Overview
 
