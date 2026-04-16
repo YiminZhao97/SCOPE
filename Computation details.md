@@ -1,3 +1,32 @@
+## System Requirements
+
+### Software dependencies
+
+SCOPE was developed and tested with **Python 3.12.7** (Anaconda distribution) on **macOS (Darwin 26.4.1)**. The following packages are required:
+
+| Package | Version |
+|---------|---------|
+| numpy | 1.26.4 |
+| pandas | 3.0.2 |
+| scipy | 1.13.1 |
+| scikit-learn | 1.5.1 |
+| joblib | 1.4.2 |
+| matplotlib | 3.9.2 |
+| seaborn | 0.13.2 |
+| scanpy | 1.11.0 |
+| anndata | 0.11.3 |
+| torch (PyTorch) | 2.6.0 |
+| cvxpy | 1.7.5 |
+| palantir | 1.4.4 |
+| imageio | 2.33.1 |
+
+### Tested operating systems
+
+- macOS (Darwin 26.4.1)
+- Linux (Fred Hutch SLURM cluster, Intel Xeon Gold 6154)
+
+## Computational Resources
+
 **Computing partition:** Jobs were run on the Fred Hutch  SLURM partition. Compute nodes are dual-socket **Intel Xeon Gold 6154 @ 3.00 GHz (2 × 18 physical cores, 72 threads per node)**.
 
 Setty dataset: 
